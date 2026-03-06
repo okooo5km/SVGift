@@ -1,6 +1,6 @@
 # SVGift
 
-[![Swift CI](https://github.com/okooo5km/svgo-swift/actions/workflows/ci.yml/badge.svg)](https://github.com/okooo5km/svgo-swift/actions/workflows/ci.yml)
+[![Swift CI](https://github.com/okooo5km/SVGift/actions/workflows/ci.yml/badge.svg)](https://github.com/okooo5km/SVGift/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Swift native implementation of [SVGO](https://github.com/svg/svgo)** — the popular Node.js SVG optimizer.
@@ -15,10 +15,17 @@ SVGift provides the same optimization capabilities as SVGO, with 49 built-in plu
 brew install okooo5km/tap/svgift
 ```
 
+Or manually:
+
+```bash
+brew tap okooo5km/tap
+brew install svgift
+```
+
 ### Build from source
 
 ```bash
-git clone https://github.com/okooo5km/svgo-swift.git
+git clone https://github.com/okooo5km/SVGift.git
 cd svgo-swift
 swift build -c release
 # Binary at .build/release/svgift
@@ -27,7 +34,7 @@ swift build -c release
 ### SwiftPM (as a library dependency)
 
 ```swift
-.package(url: "https://github.com/okooo5km/svgo-swift.git", from: "0.1.0")
+.package(url: "https://github.com/okooo5km/SVGift.git", from: "0.1.0")
 ```
 
 Then add `"SVGift"` to your target's dependencies.

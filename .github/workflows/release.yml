@@ -59,7 +59,7 @@ jobs:
           fi
 
           SHA256=$(awk '{print $1}' "$SHA256_FILE")
-          DOWNLOAD_URL="https://github.com/okooo5km/svgo-swift/releases/download/${GITHUB_REF_NAME}/${ARCHIVE}"
+          DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/${ARCHIVE}"
 
           git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/okooo5km/homebrew-tap.git" homebrew-tap
           cd homebrew-tap
@@ -67,7 +67,7 @@ jobs:
           cat > svgift.rb << FORMULA
           class Svgift < Formula
             desc "Swift native implementation of SVGO - the SVG optimizer"
-            homepage "https://github.com/okooo5km/svgo-swift"
+            homepage "https://github.com/okooo5km/SVGift"
             url "${DOWNLOAD_URL}"
             sha256 "${SHA256}"
             version "${VERSION}"
