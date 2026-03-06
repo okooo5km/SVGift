@@ -64,7 +64,7 @@ jobs:
           git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/okooo5km/homebrew-tap.git" homebrew-tap
           cd homebrew-tap
 
-          cat > Formula/svgift.rb << FORMULA
+          cat > svgift.rb << FORMULA
           class Svgift < Formula
             desc "Swift native implementation of SVGO - the SVG optimizer"
             homepage "https://github.com/okooo5km/svgo-swift"
@@ -85,6 +85,6 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/svgift.rb
+          git add svgift.rb
           git commit -m "Update svgift to ${VERSION}"
           git push
