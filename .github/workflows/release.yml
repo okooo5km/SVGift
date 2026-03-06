@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build universal binary
+        run: swift build -c release --arch arm64 --arch x86_64
+
+      - name: Package binary
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          STAGING_DIR="svgift_${VERSION}_darwin_universal"
+          mkdir -p "$STAGING_DIR"
+          cp .build/apple/Products/Release/svgift "$STAGING_DIR/svgift"
+          cp README.md LICENSE "$STAGING_DIR/" 2>/dev/null || true
+          tar -czf "${STAGING_DIR}.tar.gz" "$STAGING_DIR"
+          shasum -a 256 "${STAGING_DIR}.tar.gz" > "${STAGING_DIR}.tar.gz.sha256"
+          echo "ARCHIVE=${STAGING_DIR}.tar.gz" >> $GITHUB_ENV
+          echo "SHA256_FILE=${STAGING_DIR}.tar.gz.sha256" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "svgift $VERSION" \
+            --generate-notes \
+            "$ARCHIVE" \
+            "$SHA256_FILE"
+
+      - name: Update Homebrew tap
+        if: ${{ !contains(github.ref, '-') }}
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN not set, skipping tap update"
+            exit 0
+          fi
+
+          SHA256=$(cat "$SHA256_FILE" | awk '{print $1}')
+          DOWNLOAD_URL="https://github.com/okooo5km/svgo-swift/releases/download/${GITHUB_REF_NAME}/${ARCHIVE}"
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/okooo5km/homebrew-tap.git" homebrew-tap
+          cd homebrew-tap
+
+          cat > Formula/svgift.rb << FORMULA
+          class Svgift < Formula
+            desc "Swift native implementation of SVGO - the SVG optimizer"
+            homepage "https://github.com/okooo5km/svgo-swift"
+            url "${DOWNLOAD_URL}"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+            license "MIT"
+
+            def install
+              bin.install "svgift"
+            end
+
+            test do
+              system bin/"svgift", "--version"
+            end
+          end
+          FORMULA
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/svgift.rb
+          git commit -m "Update svgift to ${VERSION}"
+          git push
