@@ -65,23 +65,23 @@ jobs:
           cd homebrew-tap
 
           cat > Formula/svgift.rb << FORMULA
-class Svgift < Formula
-  desc "Swift native implementation of SVGO - the SVG optimizer"
-  homepage "https://github.com/okooo5km/svgo-swift"
-  url "${DOWNLOAD_URL}"
-  sha256 "${SHA256}"
-  version "${VERSION}"
-  license "MIT"
+          class Svgift < Formula
+            desc "Swift native implementation of SVGO - the SVG optimizer"
+            homepage "https://github.com/okooo5km/svgo-swift"
+            url "${DOWNLOAD_URL}"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+            license "MIT"
 
-  def install
-    bin.install "svgift"
-  end
+            def install
+              bin.install "svgift"
+            end
 
-  test do
-    system bin/"svgift", "--version"
-  end
-end
-FORMULA
+            test do
+              system bin/"svgift", "--version"
+            end
+          end
+          FORMULA
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
