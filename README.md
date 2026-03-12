@@ -181,6 +181,65 @@ SVGift provides 7 built-in optimization levels (L0-L6) that balance fidelity vs 
 | L5 | `extreme` | Yes | 1 | Removes viewBox (fixed-size only) |
 | L6 | `maximum` | Yes | 0 | Removes title, needs visual verification |
 
+### Use cases
+
+- **L0 `safe`** — Debugging and development. Pretty-printed output with high precision makes it easy to inspect optimized SVGs. IDs stay intact for readability.
+- **L1 `conservative`** — Production use where IDs must remain stable (e.g., CSS/JS referencing specific IDs). Multipass enabled for thorough optimization.
+- **L2 `recommended`** — General production use. Adds `prefixIds` to prevent ID collisions when multiple SVGs are inlined on the same page, and `removeDimensions` so the SVG scales via CSS.
+- **L3 `compact`** — Size-critical delivery (e.g., email templates, bandwidth-constrained environments). Enables ID minification for shorter output.
+- **L4 `aggressive`** — Icon systems and controlled rendering environments. Strips `<style>`, `<script>`, and raster `<image>` elements that are unnecessary in icon pipelines.
+- **L5 `extreme`** — Fixed-size rendering only (e.g., `<img>` tags with explicit width/height, or native renderers). Removes `viewBox`, so the SVG cannot scale responsively.
+- **L6 `maximum`** — Maximum compression with visual verification required. Also removes `<title>` (impacts accessibility). Use only when every byte counts and you can manually verify the output.
+
+### Incremental differences
+
+Each level builds on the previous one. Here is what changes at each step:
+
+| Transition | Changes |
+|------------|---------|
+| L0 → L1 | Enable multipass; reduce precision 6→4; disable pretty output |
+| L1 → L2 | Reduce precision 4→3; enable `removeDesc`, `removeDimensions`, `prefixIds` |
+| L2 → L3 | Reduce precision 3→2; enable `cleanupIds` minification; remove `prefixIds` |
+| L3 → L4 | Add `removeStyleElement`, `removeScripts`, `removeRasterImages` |
+| L4 → L5 | Reduce precision 2→1; add `removeViewBox` |
+| L5 → L6 | Reduce precision 1→0; add `removeTitle` |
+
+### Combining presets with CLI flags
+
+CLI flags override the corresponding preset values, so you can fine-tune without writing a config file:
+
+```bash
+# Use recommended preset but keep pretty output for review
+svgift input.svg --preset recommended --pretty
+
+# Use compact preset with custom precision
+svgift input.svg --preset compact --float-precision 3
+
+# Use aggressive preset without multipass (single-pass only)
+svgift input.svg --preset aggressive --no-multipass
+
+# Recursively optimize a directory with a preset
+svgift -r icons/ --preset aggressive -o optimized/
+```
+
+In the library API, modify the returned options object:
+
+```swift
+var options = OptimizeOptions.preset(.compact)
+options.js2svg.pretty = true           // override output format
+options.js2svg.indent = 2              // custom indent width
+options.floatPrecision = 4             // override precision
+let result = try optimize(svg, options: options)
+```
+
+### Risk warnings
+
+> **L5/L6: `removeViewBox`** — Without `viewBox`, the SVG cannot scale responsively. Only use when the SVG is rendered at a fixed size (e.g., `<img width="24" height="24">`). If you later need the SVG to be responsive, you will need to re-optimize from the original source.
+>
+> **L6: `removeTitle`** — The `<title>` element provides an accessible name for screen readers. Removing it degrades accessibility. Ensure alternative accessible labels are provided in the surrounding HTML (e.g., `aria-label` on the container).
+>
+> **L4+: `removeStyleElement` / `removeScripts`** — These levels strip all `<style>` and `<script>` content. SVGs that rely on CSS animations, hover effects, or JavaScript interactivity will break. Verify the SVG does not depend on these features before using L4+.
+
 ## Plugins
 
 49 built-in plugins are available. See [docs/plugins.md](docs/plugins.md) for the complete list with descriptions and parameters.

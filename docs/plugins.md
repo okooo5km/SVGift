@@ -2,6 +2,37 @@
 
 All 49 built-in plugins. Plugins marked with ✅ are enabled by default (`preset-default`).
 
+## Plugins by Optimization Level
+
+SVGift provides 7 built-in presets (L0-L6). All levels share a common base of 33 preset-default plugins. The table below shows what each level adds or changes relative to that base.
+
+### Base plugins (all levels)
+
+All levels include these 33 plugins from preset-default (in execution order):
+
+`removeDoctype`, `removeXMLProcInst`, `removeComments`, `removeDeprecatedAttrs`, `removeMetadata`, `removeEditorsNSData`, `cleanupAttrs`, `mergeStyles`, `inlineStyles`, `minifyStyles`, `cleanupIds`, `removeUselessDefs`, `cleanupNumericValues`, `convertColors`, `removeUnknownsAndDefaults`, `removeNonInheritableGroupAttrs`, `removeUselessStrokeAndFill`, `cleanupEnableBackground`, `removeHiddenElems`, `removeEmptyText`, `convertShapeToPath`, `convertEllipseToCircle`, `moveElemsAttrsToGroup`, `moveGroupAttrsToElems`, `collapseGroups`, `convertPathData`, `convertTransform`, `removeEmptyAttrs`, `removeEmptyContainers`, `mergePaths`, `removeUnusedNS`, `sortAttrs`, `sortDefsChildren`
+
+### Per-level additions and parameter overrides
+
+| Level | Extra Plugins | Parameter Overrides | Output |
+|-------|--------------|---------------------|--------|
+| L0 `safe` | `removeDesc` (disabled) | `cleanupIds`: minify=false | pretty=true, precision=6, single-pass |
+| L1 `conservative` | `removeDesc` (disabled) | `cleanupIds`: minify=false | precision=4, multipass |
+| L2 `recommended` | +`removeDesc`, +`removeDimensions`, +`prefixIds`(prefix="o") | `cleanupIds`: minify=false | precision=3, multipass |
+| L3 `compact` | +`removeDesc`, +`removeDimensions` | (defaults) | precision=2, multipass |
+| L4 `aggressive` | +`removeDesc`, +`removeDimensions`, +`removeStyleElement`, +`removeScripts`, +`removeRasterImages` | (defaults) | precision=2, multipass |
+| L5 `extreme` | L4 plugins + `removeViewBox` | (defaults) | precision=1, multipass |
+| L6 `maximum` | L5 plugins + `removeTitle` | (defaults) | precision=0, multipass |
+
+### Key differences explained
+
+- **`cleanupIds` minify** — L0-L2 set `minify=false` to preserve original IDs. L3+ use the default (`minify=true`), which replaces IDs with short generated names for smaller output.
+- **`prefixIds`** — Only L2 enables this plugin (with `prefix="o"`, `delim=""`). It prevents ID collisions when multiple SVGs are embedded in the same HTML page. L3+ omit it because ID minification already produces unique short IDs per file.
+- **`removeDesc`** — L0 and L1 explicitly disable this plugin to preserve `<desc>` elements. L2+ enable it.
+- **`removeDimensions`** — Added at L2+. Removes `width`/`height` attributes so the SVG scales via CSS `viewBox`.
+
+---
+
 ## preset-default Plugins (34)
 
 These plugins run in the following order when using the default configuration:
