@@ -27,7 +27,18 @@ public func optimize(_ input: String, options: OptimizeOptions = .init()) throws
         let ast = try parseSvg(current, path: options.path)
 
         // 2. Resolve and invoke plugins
-        let resolved = resolvePlugins(options.plugins, from: options.pluginRegistry)
+        var resolved = resolvePlugins(options.plugins, from: options.pluginRegistry)
+
+        // Inject global floatPrecision into plugins that don't specify their own
+        if let fp = options.floatPrecision {
+            let fpStr = String(fp)
+            for i in resolved.indices {
+                if resolved[i].params["floatPrecision"] == nil {
+                    resolved[i].params["floatPrecision"] = fpStr
+                }
+            }
+        }
+
         invokePlugins(ast, info: info, plugins: resolved)
 
         // 3. Stringify AST back to SVG

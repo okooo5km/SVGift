@@ -34,7 +34,7 @@ swift build -c release
 ### SwiftPM (as a library dependency)
 
 ```swift
-.package(url: "https://github.com/okooo5km/SVGift.git", from: "0.1.0")
+.package(url: "https://github.com/okooo5km/SVGift.git", from: "0.2.0")
 ```
 
 Then add `"SVGift"` to your target's dependencies.
@@ -65,12 +65,20 @@ svgift input.svg --multipass -o output.svg
 # Pretty-print output
 svgift input.svg --pretty
 
+# Custom indentation (default: 4, use -1 for tabs)
+svgift input.svg --pretty --indent 2
+
+# Set global float precision for numeric values
+svgift input.svg --float-precision 2
+
 # Use a config file
 svgift input.svg --config svgo.config.json -o output.svg
 
 # List available plugins
 svgift --show-plugins
 ```
+
+CLI flags (`--multipass`, `--pretty`, `--indent`, `--float-precision`) override the corresponding values in the config file when both are provided.
 
 ### Library API
 
@@ -94,63 +102,56 @@ let result = try optimize(input, options: options)
 
 ## Configuration
 
-Create a JSON config file to customize plugin behavior:
+Create a JSON config file to customize optimization behavior:
 
 ```json
 {
   "multipass": true,
+  "floatPrecision": 3,
+  "js2svg": {
+    "pretty": true,
+    "indent": 2
+  },
   "plugins": [
-    "preset-default",
+    "removeDoctype",
+    "removeComments",
     {
       "name": "removeAttrs",
       "params": {
         "attrs": ["fill", "stroke"]
       }
-    },
-    {
-      "name": "addAttributesToSVGElement",
-      "params": {
-        "attributes": {
-          "xmlns": "http://www.w3.org/2000/svg"
-        }
-      }
     }
   ]
 }
 ```
 
-### Disabling a default plugin
+### Top-level options
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `multipass` | `bool` | `false` | Run multiple optimization passes (up to 10) until output converges |
+| `floatPrecision` | `int` | plugin default (3) | Global float precision injected into all plugins that support it |
+| `js2svg.pretty` | `bool` | `false` | Pretty-print output with indentation |
+| `js2svg.indent` | `int` | `4` | Indentation width (use `-1` for tabs) |
+| `js2svg.useShortTags` | `bool` | `true` | Use self-closing tags (e.g. `<path/>`) |
+| `js2svg.finalNewline` | `bool` | `false` | Add a final newline at end of file |
+
+### Plugin formats
+
+Plugins can be specified as strings, objects, or a mix of both:
 
 ```json
 {
   "plugins": [
-    "preset-default",
-    {
-      "name": "removeComments",
-      "enabled": false
-    }
+    "removeDoctype",
+    { "name": "removeComments" },
+    { "name": "cleanupIds", "params": { "minify": false } },
+    { "name": "removeDesc", "enabled": false }
   ]
 }
 ```
 
-### Customizing plugin parameters
-
-```json
-{
-  "plugins": [
-    {
-      "name": "preset-default",
-      "params": {
-        "overrides": {
-          "cleanupIds": {
-            "minify": false
-          }
-        }
-      }
-    }
-  ]
-}
-```
+When no `plugins` key is provided, the 34 default plugins are used.
 
 ## Plugins
 

@@ -37,7 +37,10 @@ struct SVGiftCLI: ParsableCommand {
     var pretty: Bool = false
 
     @Option(name: .long, help: "Indentation width (default: 4). Use -1 for tabs.")
-    var indent: Int = 4
+    var indent: Int?
+
+    @Option(name: .long, help: "Global float precision for numeric values (default: plugin default).")
+    var floatPrecision: Int?
 
     @Option(name: .long, help: "Path to JSON config file.")
     var config: String?
@@ -104,9 +107,25 @@ struct SVGiftCLI: ParsableCommand {
                 pluginRegistry: builtinPluginRegistry
             )
         }
-        options.multipass = multipass
-        options.js2svg.pretty = pretty
-        options.js2svg.indent = indent
+
+        // CLI flags override config only when explicitly provided.
+        // --multipass and --pretty are Bool flags: they are only "true" when
+        // the user explicitly passes them on the command line, so we can
+        // safely use them as overrides (false is ArgumentParser's default
+        // and means "not provided").
+        if multipass {
+            options.multipass = true
+        }
+        if pretty {
+            options.js2svg.pretty = true
+        }
+        if let indent {
+            options.js2svg.indent = indent
+        }
+        if let floatPrecision {
+            options.floatPrecision = floatPrecision
+        }
+
         if options.pluginRegistry.isEmpty {
             options.pluginRegistry = builtinPluginRegistry
         }

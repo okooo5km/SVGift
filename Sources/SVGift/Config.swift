@@ -10,15 +10,17 @@ import Foundation
 /// ```json
 /// {
 ///   "multipass": true,
+///   "floatPrecision": 3,
 ///   "js2svg": { "pretty": true, "indent": 2 },
 ///   "plugins": [
-///     { "name": "removeDoctype" },
+///     "removeDoctype",
 ///     { "name": "removeComments", "params": { "preservePatterns": "false" } },
 ///     { "name": "sortAttrs", "enabled": false }
 ///   ]
 /// }
 /// ```
 ///
+/// Plugins can be specified as strings, objects, or a mix of both.
 /// If no `plugins` key is provided, `presetDefaultPlugins` is used.
 public func loadConfig(at path: String) throws -> OptimizeOptions {
     let url = URL(fileURLWithPath: path)
@@ -63,28 +65,37 @@ public func loadConfig(at path: String) throws -> OptimizeOptions {
         }
     }
 
-    // plugins
-    if let pluginsArray = json["plugins"] as? [[String: Any]] {
+    // plugins — supports both string array and object array formats:
+    //   ["removeDoctype", "removeComments"]
+    //   [{ "name": "removeComments", "params": { ... } }]
+    //   mixed: ["removeDoctype", { "name": "removeComments", "params": { ... } }]
+    if let pluginsRaw = json["plugins"] as? [Any] {
         var configs: [PluginConfig] = []
-        for pluginObj in pluginsArray {
-            guard let name = pluginObj["name"] as? String else { continue }
-            let enabled = pluginObj["enabled"] as? Bool ?? true
-            var params: [String: String] = [:]
-            if let paramsObj = pluginObj["params"] as? [String: Any] {
-                for (key, value) in paramsObj {
-                    if let boolVal = value as? Bool {
-                        params[key] = boolVal ? "true" : "false"
-                    } else if let strVal = value as? String {
-                        params[key] = strVal
-                    } else if let numVal = value as? NSNumber {
-                        params[key] = numVal.stringValue
-                    } else if let subData = try? JSONSerialization.data(withJSONObject: value),
-                              let subStr = String(data: subData, encoding: .utf8) {
-                        params[key] = subStr
+        for item in pluginsRaw {
+            if let name = item as? String {
+                // String shorthand: just a plugin name with defaults
+                configs.append(PluginConfig(name: name))
+            } else if let pluginObj = item as? [String: Any],
+                      let name = pluginObj["name"] as? String {
+                // Object format: { "name": "...", "enabled": ..., "params": { ... } }
+                let enabled = pluginObj["enabled"] as? Bool ?? true
+                var params: [String: String] = [:]
+                if let paramsObj = pluginObj["params"] as? [String: Any] {
+                    for (key, value) in paramsObj {
+                        if let boolVal = value as? Bool {
+                            params[key] = boolVal ? "true" : "false"
+                        } else if let strVal = value as? String {
+                            params[key] = strVal
+                        } else if let numVal = value as? NSNumber {
+                            params[key] = numVal.stringValue
+                        } else if let subData = try? JSONSerialization.data(withJSONObject: value),
+                                  let subStr = String(data: subData, encoding: .utf8) {
+                            params[key] = subStr
+                        }
                     }
                 }
+                configs.append(PluginConfig(name: name, enabled: enabled, params: params))
             }
-            configs.append(PluginConfig(name: name, enabled: enabled, params: params))
         }
         options.plugins = configs
     } else {
