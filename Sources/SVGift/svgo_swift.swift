@@ -54,6 +54,17 @@ public func optimize(_ input: String, options: OptimizeOptions = .init()) throws
     return OptimizeResult(data: current)
 }
 
+/// Optimize an SVG string using a built-in optimization level.
+///
+/// - Parameters:
+///   - input: The SVG string to optimize
+///   - preset: The optimization level (L0-L6)
+/// - Returns: The optimization result containing the optimized SVG string
+/// - Throws: SVGOError if optimization fails
+public func optimize(_ input: String, preset: OptimizationLevel) throws -> OptimizeResult {
+    try optimize(input, options: .preset(preset))
+}
+
 // MARK: - Plugin Resolution
 
 /// Resolve plugin configs against a registry of available plugins

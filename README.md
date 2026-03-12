@@ -34,7 +34,7 @@ swift build -c release
 ### SwiftPM (as a library dependency)
 
 ```swift
-.package(url: "https://github.com/okooo5km/SVGift.git", from: "0.2.0")
+.package(url: "https://github.com/okooo5km/SVGift.git", from: "0.3.0")
 ```
 
 Then add `"SVGift"` to your target's dependencies.
@@ -59,6 +59,10 @@ svgift -r icons/
 # Recursively optimize to a different directory
 svgift -r icons/ -o optimized/
 
+# Use a built-in preset (0-6 or name)
+svgift input.svg --preset recommended
+svgift input.svg --preset 4
+
 # Enable multipass optimization
 svgift input.svg --multipass -o output.svg
 
@@ -74,11 +78,12 @@ svgift input.svg --float-precision 2
 # Use a config file
 svgift input.svg --config svgo.config.json -o output.svg
 
-# List available plugins
+# List available plugins / presets
 svgift --show-plugins
+svgift --show-presets
 ```
 
-CLI flags (`--multipass`, `--pretty`, `--indent`, `--float-precision`) override the corresponding values in the config file when both are provided.
+CLI flags (`--multipass`, `--pretty`, `--indent`, `--float-precision`) override the corresponding values in the preset or config file when provided.
 
 ### Library API
 
@@ -90,7 +95,16 @@ let input = "<svg>...</svg>"
 let result = try optimize(input)
 print(result.data)
 
-// Custom options
+// Use a built-in preset
+let result = try optimize(input, preset: .recommended)  // L2
+let result = try optimize(input, preset: .aggressive)    // L4
+
+// Preset with customization
+var options = OptimizeOptions.preset(.compact)
+options.js2svg.pretty = true  // override a single field
+let result = try optimize(input, options: options)
+
+// Fully custom options
 var options = OptimizeOptions(
     plugins: presetDefaultPlugins,
     pluginRegistry: builtinPluginRegistry
@@ -152,6 +166,20 @@ Plugins can be specified as strings, objects, or a mix of both:
 ```
 
 When no `plugins` key is provided, the 34 default plugins are used.
+
+## Optimization Presets
+
+SVGift provides 7 built-in optimization levels (L0-L6) that balance fidelity vs compression:
+
+| Level | Name | Multipass | Precision | Key Features |
+|-------|------|-----------|-----------|-------------|
+| L0 | `safe` | No | 6 | Pretty output, IDs preserved, debug-friendly |
+| L1 | `conservative` | Yes | 4 | Compact output, IDs preserved |
+| L2 | `recommended` | Yes | 3 | Balanced, removeDimensions, prefixIds |
+| L3 | `compact` | Yes | 2 | Size-oriented, ID minification |
+| L4 | `aggressive` | Yes | 2 | Strips styles/scripts/raster images |
+| L5 | `extreme` | Yes | 1 | Removes viewBox (fixed-size only) |
+| L6 | `maximum` | Yes | 0 | Removes title, needs visual verification |
 
 ## Plugins
 

@@ -42,16 +42,26 @@ struct SVGiftCLI: ParsableCommand {
     @Option(name: .long, help: "Global float precision for numeric values (default: plugin default).")
     var floatPrecision: Int?
 
+    @Option(name: .long, help: "Optimization preset level (0-6 or name: safe, conservative, recommended, compact, aggressive, extreme, maximum).")
+    var preset: String?
+
     @Option(name: .long, help: "Path to JSON config file.")
     var config: String?
 
     @Flag(name: .long, help: "Show list of available plugins.")
     var showPlugins: Bool = false
 
+    @Flag(name: .long, help: "Show list of available presets.")
+    var showPresets: Bool = false
+
     @Flag(name: .shortAndLong, help: "Quiet mode. Suppress progress output.")
     var quiet: Bool = false
 
     mutating func run() throws {
+        if showPresets {
+            printAvailablePresets()
+            return
+        }
         if showPlugins {
             printAvailablePlugins()
             return
@@ -101,6 +111,11 @@ struct SVGiftCLI: ParsableCommand {
         var options: OptimizeOptions
         if let configPath = config {
             options = try loadConfig(at: configPath)
+        } else if let presetStr = preset {
+            guard let level = parsePresetLevel(presetStr) else {
+                throw CLIError.invalidPreset(presetStr)
+            }
+            options = .preset(level)
         } else {
             options = OptimizeOptions(
                 plugins: presetDefaultPlugins,
@@ -275,6 +290,33 @@ struct SVGiftCLI: ParsableCommand {
             print("  - \(name)\(marker)")
         }
     }
+
+    private func printAvailablePresets() {
+        print("Available optimization presets:\n")
+        for level in OptimizationLevel.allCases {
+            print("  \(level.rawValue)  \(level.description)")
+        }
+        print("\nUsage: svgift input.svg --preset <level>")
+        print("  level can be a number (0-6) or a name (safe, conservative, ...)")
+    }
+
+    private func parsePresetLevel(_ value: String) -> OptimizationLevel? {
+        // Try numeric first
+        if let n = Int(value) {
+            return .level(n)
+        }
+        // Try name matching (case-insensitive)
+        switch value.lowercased() {
+        case "safe":         return .safe
+        case "conservative": return .conservative
+        case "recommended":  return .recommended
+        case "compact":      return .compact
+        case "aggressive":   return .aggressive
+        case "extreme":      return .extreme
+        case "maximum":      return .maximum
+        default:             return nil
+        }
+    }
 }
 
 enum CLIError: Error, CustomStringConvertible {
@@ -282,6 +324,7 @@ enum CLIError: Error, CustomStringConvertible {
     case emptyInput
     case directoryRequiresRecursive(String)
     case cannotReadDirectory(String)
+    case invalidPreset(String)
 
     var description: String {
         switch self {
@@ -293,6 +336,8 @@ enum CLIError: Error, CustomStringConvertible {
             return "'\(path)' is a directory. Use --recursive (-r) to process directories."
         case .cannotReadDirectory(let path):
             return "Cannot read directory: \(path)"
+        case .invalidPreset(let value):
+            return "Invalid preset '\(value)'. Use 0-6 or: safe, conservative, recommended, compact, aggressive, extreme, maximum."
         }
     }
 }
